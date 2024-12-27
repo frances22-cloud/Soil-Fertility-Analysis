@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soil Fertility Prediction</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+
+        #map {
+            height: 100vh;
+            width: 65%;
+        }
+
+        #form-container {
+            width: 30%;
+            padding: 10px;
+            background-color: #f8f8f8;
+            overflow-y: auto;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            margin-top: 8px;
+            font-size: 14px;
+        }
+
+        input {
+            padding: 8px;
+            margin-top: 4px;
+            font-size: 12px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            margin-top: 15px;
+            padding: 8px;
+            font-size: 14px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 8px;
+            font-size: 14px;
+            background-color: #e7f3e7;
+            border: 1px solid #d4ecd4;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Map Container -->
+    <div id="map"></div>
+
+    <!-- Form Container -->
+    <div id="form-container">
+        <h2>Soil Fertility Prediction</h2>
+        <form id="prediction-form">
+            <label for="latitude">Latitude:</label>
+            <input type="number" id="latitude" name="latitude" step="any" placeholder="Enter latitude" required />
+
+            <label for="longitude">Longitude:</label>
+            <input type="number" id="longitude" name="longitude" step="any" placeholder="Enter longitude" required />
+
+            <label for="nitrogen">Nitrogen:</label>
+            <input type="number" id="nitrogen" name="nitrogen" step="any" placeholder="Nitrogen content" />
+
+            <label for="ph">pH:</label>
+            <input type="number" id="ph" name="ph" step="any" placeholder="Soil pH" />
+
+            <label for="sand">Sand:</label>
+            <input type="number" id="sand" name="sand" step="any" placeholder="Sand content" />
+
+            <label for="silt">Silt:</label>
+            <input type="number" id="silt" name="silt" step="any" placeholder="Silt content" />
+
+            <label for="clay">Clay:</label>
+            <input type="number" id="clay" name="clay" step="any" placeholder="Clay content" />
+
+            <label for="cec">CEC:</label>
+            <input type="number" id="cec" name="cec" step="any" placeholder="Cation Exchange Capacity" />
+
+            <label for="bulk_density">Bulk Density:</label>
+            <input type="number" id="bulk_density" name="bulk_density" step="any" placeholder="Bulk density" />
+
+            <label for="soc">Soil Organic Carbon:</label>
+            <input type="number" id="soc" name="soc" step="any" placeholder="Soil Organic Carbon" />
+
+            <button type="submit">Predict Fertility</button>
+        </form>
+
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Initialize map
+        var map = L.map('map').setView([-1.2, 36.8], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var marker;
+
+        // Form submission handler
+        document.getElementById('prediction-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            var formData = new FormData(e.target);
+            var data = {};
+            formData.forEach((value, key) => {
+                if (value) data[key] = parseFloat(value);
+            });
+
+            fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('result').style.display = 'block';
+                    document.getElementById('result').innerHTML = `
+                        <b>Soil Fertility Status:</b> ${data.fertility_status}<br>
+                        <b>Recommended Crops:</b> ${data.recommended_crops.join(', ')}<br>
+                        <b>Insights:</b> ${data.insights}<br>
+                        <a href="${data.map_path}" target="_blank">View Soil Map</a>
+                    `;
+                    if (marker) marker.remove();
+                    marker = L.marker([data.latitude, data.longitude]).addTo(map);
+                }
+            })
+            .catch(err => alert('Error: ' + err));
+        });
+
+        // Map click listener to autofill coordinates
+        map.on('click', function(e) {
+            document.getElementById('latitude').value = e.latlng.lat;
+            document.getElementById('longitude').value = e.latlng.lng;
+        });
+    </script>
+</body>
+</html>
