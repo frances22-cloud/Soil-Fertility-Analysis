@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prediction Results</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f7f7f7;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: #333;
+        }
+        h2 {
+            font-size: 20px;
+            margin-top: 20px;
+            color: #555;
+        }
+        .result {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #e7f3e7;
+            border: 1px solid #d4ecd4;
+            border-radius: 5px;
+        }
+        .error {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8d7da;
+            border: 1px solid #f5c2c7;
+            border-radius: 5px;
+            color: #842029;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 14px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <!-- Keep your existing head and style sections -->
+
+<div class="container">
+    <h1>Soil Fertility Prediction Results</h1>
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% else %}
+    <div class="result">
+        <h2>Location</h2>
+        <p><strong>Latitude:</strong> {{ latitude }}</p>
+        <p><strong>Longitude:</strong> {{ longitude }}</p>
+       
+        <h2>Soil Properties</h2>
+        <ul>
+            {% for key, value in soil_data.items() %}
+            <li><strong>{{ key.replace('_', ' ').capitalize() }}:</strong> {{ "%.2f"|format(value) }}</li>
+            {% endfor %}
+        </ul>
+       
+        <h2>Prediction Results</h2>
+        <!-- Debug output to see what's being passed -->
+        <div style="display: none;">
+            Debug: {{ fertility_info }}
+        </div>
+        
+        <p><strong>Soil Fertility Status:</strong> 
+            {% if fertility_info and fertility_info.status %}
+                {{ fertility_info.status }}
+            {% else %}
+                No status available
+            {% endif %}
+        </p>
+        
+        <p><strong>Recommended Crops:</strong></p>
+        <ul>
+            {% if fertility_info and fertility_info.crops %}
+                {% for crop in fertility_info.crops %}
+                    <li>{{ crop }}</li>
+                {% endfor %}
+            {% else %}
+                <li>No crop recommendations available</li>
+            {% endif %}
+        </ul>
+        
+        <p><strong>Insights:</strong> 
+            {% if fertility_info and fertility_info.insights %}
+                {{ fertility_info.insights }}
+            {% else %}
+                No insights available
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+    <button onclick="window.location.href='/index'">Back to Home</button>
+</div>
+</body>
+</html>

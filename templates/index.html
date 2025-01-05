@@ -3,171 +3,337 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soil Fertility Prediction</title>
+    <title>FarmFlourish</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.css" />
     <style>
-        body {
+        /* Navigation bar styles */
+        .nav-container {
+            background-color: #4CAF50;
+            padding: 1rem;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            z-index: 1000;
+        }
+        
+        .nav-menu {
             display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%; /* Make sure the menu takes full width */
+        }
+        
+        .nav-item {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        
+        .nav-item:hover {
+            background-color: #45a049;
+        }
+        
+        /* Align logout button to the left */
+        .logout-btn {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        /* Align Chatbot to the right */
+        .nav-menu .nav-item:last-child {
+            margin-left: auto; /* Pushes the chatbot to the right */
+        }
+        
+        .logout-btn:hover {
+            background-color: #c82333;
+        }
+        
+        /* Page layout styles */
+        body {
             margin: 0;
             font-family: Arial, sans-serif;
-        }
-
-        #map {
-            height: 100vh;
-            width: 65%;
-        }
-
-        #form-container {
-            width: 30%;
-            padding: 10px;
-            background-color: #f8f8f8;
-            overflow-y: auto;
-            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
-        }
-
-        h2 {
-            margin-top: 0;
-            font-size: 18px;
-        }
-
-        form {
+            padding-top: 70px; /* Account for fixed navigation bar */
             display: flex;
-            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
         }
-
+        
+        #map {
+            height: 80vh;
+            width: 60%;
+            margin: 10px;
+        }
+        
+        #form-container {
+            width: 40%;
+            padding: 20px;
+            background-color: #f9f9f9;
+            box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+            margin: 10px;
+            height: 70vh;
+            overflow-y: auto;
+        }
+        
+        /* Form styles */
+        form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        
         label {
-            margin-top: 8px;
             font-size: 14px;
+            color: #333;
         }
-
-        input {
+        
+        input, button {
+            font-size: 14px;
             padding: 8px;
-            margin-top: 4px;
-            font-size: 12px;
             border: 1px solid #ccc;
             border-radius: 4px;
         }
-
+        
         button {
-            margin-top: 15px;
-            padding: 8px;
-            font-size: 14px;
+            grid-column: span 2;
             background-color: #4CAF50;
             color: white;
-            border: none;
-            border-radius: 5px;
             cursor: pointer;
+            transition: background-color 0.3s;
         }
-
+        
         button:hover {
             background-color: #45a049;
         }
-
+        
+        /* Search box and result styles */
+        #search-container {
+            margin-bottom: 20px;
+        }
+        
         .result {
             margin-top: 15px;
-            padding: 8px;
+            padding: 10px;
             font-size: 14px;
             background-color: #e7f3e7;
             border: 1px solid #d4ecd4;
             border-radius: 5px;
         }
+        
     </style>
 </head>
 <body>
-    <!-- Map Container -->
+    <!-- Navigation Bar -->
+    <nav class="nav-container">
+        <div class="nav-menu">
+            <a href="/chatbot" class="nav-item">Chatbot</a>
+            <button class="logout-btn" onclick="handleLogout()">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Map Section -->
     <div id="map"></div>
 
-    <!-- Form Container -->
+    <!-- Form Section -->
     <div id="form-container">
         <h2>Soil Fertility Prediction</h2>
-        <form id="prediction-form">
+        <div id="search-container">
+            <input type="text" id="regionName" placeholder="Search region..." />
+            <button type="button" id="searchButton">Search</button>
+        </div>
+        <form id="prediction-form" method="POST" action="/predict">
             <label for="latitude">Latitude:</label>
-            <input type="number" id="latitude" name="latitude" step="any" placeholder="Enter latitude" required />
-
+            <input type="number" id="latitude" name="latitude" step="any" placeholder="Latitude" required />
             <label for="longitude">Longitude:</label>
-            <input type="number" id="longitude" name="longitude" step="any" placeholder="Enter longitude" required />
-
+            <input type="number" id="longitude" name="longitude" step="any" placeholder="Longitude" required />
             <label for="nitrogen">Nitrogen:</label>
             <input type="number" id="nitrogen" name="nitrogen" step="any" placeholder="Nitrogen content" />
-
             <label for="ph">pH:</label>
             <input type="number" id="ph" name="ph" step="any" placeholder="Soil pH" />
-
             <label for="sand">Sand:</label>
             <input type="number" id="sand" name="sand" step="any" placeholder="Sand content" />
-
             <label for="silt">Silt:</label>
             <input type="number" id="silt" name="silt" step="any" placeholder="Silt content" />
-
             <label for="clay">Clay:</label>
             <input type="number" id="clay" name="clay" step="any" placeholder="Clay content" />
-
             <label for="cec">CEC:</label>
             <input type="number" id="cec" name="cec" step="any" placeholder="Cation Exchange Capacity" />
-
             <label for="bulk_density">Bulk Density:</label>
             <input type="number" id="bulk_density" name="bulk_density" step="any" placeholder="Bulk density" />
-
             <label for="soc">Soil Organic Carbon:</label>
             <input type="number" id="soc" name="soc" step="any" placeholder="Soil Organic Carbon" />
-
-            <button type="submit">Predict Fertility</button>
+            <button type="submit">Predict</button>
         </form>
-
         <div id="result" class="result" style="display: none;"></div>
     </div>
-
-    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>   
     <script>
-        // Initialize map
-        var map = L.map('map').setView([-1.2, 36.8], 8);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+// Logout Button Logic
+function handleLogout() {
+    window.location.href = '/logout';
+}
 
-        var marker;
+// Initialize Map
+var map = L.map('map').setView([0.7, 35.9], 8);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; OpenStreetMap contributors'
+}).addTo(map);
 
-        // Form submission handler
-        document.getElementById('prediction-form').addEventListener('submit', function(e) {
-            e.preventDefault();
+var marker;
+var regionLayer;
+
+// Add geocoding control
+var geocoder = L.Control.Geocoder.nominatim();
+L.Control.geocoder({
+    geocoder: geocoder,
+    defaultMarkGeocode: false
+}).on('markgeocode', function(e) {
+    var bbox = e.geocode.bbox;
+    var poly = L.polygon([
+        bbox.getSouthEast(),
+        bbox.getNorthEast(),
+        bbox.getNorthWest(),
+        bbox.getSouthWest()
+    ]);
+
+    if (marker) map.removeLayer(marker);
+    if (regionLayer) map.removeLayer(regionLayer);
+
+    regionLayer = poly.addTo(map);
+    map.fitBounds(poly.getBounds());
+
+    var center = poly.getBounds().getCenter();
+    fetchSoilData(center.lat, center.lng);
+}).addTo(map);
+
+// Search Region Logic
+document.getElementById('searchButton').addEventListener('click', function() {
+    const regionName = document.getElementById('regionName').value.trim();
+    if (!regionName) {
+        alert('Please enter a region name.');
+        return;
+    }
+
+    geocoder.geocode(regionName, function(results) {
+        if (results.length === 0) {
+            alert('Region not found. Try a different name.');
+            return;
+        }
+
+        const result = results[0];
+        if (result.bbox) {
+            const poly = L.polygon([
+                [result.bbox.getSouth(), result.bbox.getEast()],
+                [result.bbox.getNorth(), result.bbox.getEast()],
+                [result.bbox.getNorth(), result.bbox.getWest()],
+                [result.bbox.getSouth(), result.bbox.getWest()]
+            ]);
+
+            if (marker) map.removeLayer(marker);
+            if (regionLayer) map.removeLayer(regionLayer);
+
+            regionLayer = poly.addTo(map);
+            map.fitBounds(poly.getBounds());
+
+            var center = poly.getBounds().getCenter();
+            fetchSoilData(center.lat, center.lng);
+        } else {
+            const lat = result.center.lat;
+            const lng = result.center.lng;
             
-            var formData = new FormData(e.target);
-            var data = {};
-            formData.forEach((value, key) => {
-                if (value) data[key] = parseFloat(value);
-            });
+            if (marker) map.removeLayer(marker);
+            if (regionLayer) map.removeLayer(regionLayer);
+            
+            marker = L.marker([lat, lng]).addTo(map);
+            map.setView([lat, lng], 12);
+            
+            fetchSoilData(lat, lng);
+        }
+    });
+});
 
-            fetch('/predict', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.error) {
-                    alert(data.error);
-                } else {
-                    document.getElementById('result').style.display = 'block';
-                    document.getElementById('result').innerHTML = `
-                        <b>Soil Fertility Status:</b> ${data.fertility_status}<br>
-                        <b>Recommended Crops:</b> ${data.recommended_crops.join(', ')}<br>
-                        <b>Insights:</b> ${data.insights}<br>
-                        <a href="${data.map_path}" target="_blank">View Soil Map</a>
-                    `;
-                    if (marker) marker.remove();
-                    marker = L.marker([data.latitude, data.longitude]).addTo(map);
-                }
-            })
-            .catch(err => alert('Error: ' + err));
-        });
+// Handle Map Clicks
+map.on('click', function(e) {
+    const lat = e.latlng.lat;
+    const lng = e.latlng.lng;
 
-        // Map click listener to autofill coordinates
-        map.on('click', function(e) {
-            document.getElementById('latitude').value = e.latlng.lat;
-            document.getElementById('longitude').value = e.latlng.lng;
+    if (marker) map.removeLayer(marker);
+    if (regionLayer) map.removeLayer(regionLayer);
+
+    marker = L.marker(e.latlng).addTo(map);
+    fetchSoilData(lat, lng);
+});
+
+// Function to fetch soil data
+function fetchSoilData(lat, lng) {
+    document.getElementById('latitude').value = lat.toFixed(6);
+    document.getElementById('longitude').value = lng.toFixed(6);
+
+    fetch(`/get_soil_data?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Received soil data:', data);
+            // Auto-fill form fields
+            document.getElementById('nitrogen').value = data.N || '';
+            document.getElementById('ph').value = data.ph || '';
+            document.getElementById('sand').value = data.sand || '';
+            document.getElementById('silt').value = data.silt || '';
+            document.getElementById('clay').value = data.clay || '';
+            document.getElementById('cec').value = data.cec || '';
+            document.getElementById('bulk_density').value = data['bulk density'] || '';
+            document.getElementById('soc').value = data.soc || '';
+        })
+        .catch(err => {
+            console.error('Error fetching soil data:', err);
+            alert('Error fetching soil data. Please try another location.');
         });
+}
+
+// Form Submission Logic
+document.getElementById('prediction-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+
+    fetch('/predict', {
+        method: 'POST',
+        headers: { 
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        const resultDiv = document.getElementById('result');
+        resultDiv.style.display = 'block';
+        resultDiv.innerHTML = `
+            <strong>Prediction:</strong> ${result.fertility_status}<br>
+            <strong>Recommended Crops:</strong> ${result.recommended_crops.join(', ')}<br>
+            <strong>Insights:</strong> ${result.insights}
+        `;
+    })
+    .catch(err => {
+        console.error('Error:', err);
+        alert('Error making prediction. Please try again.');
+    });
+});
     </script>
+    
+    <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 </body>
 </html>
