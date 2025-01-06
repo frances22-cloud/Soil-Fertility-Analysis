@@ -71,7 +71,7 @@
         #map {
             height: 80vh;
             width: 60%;
-            margin: 10px;
+            margin: 8px;
         }
         
         #form-container {
@@ -104,7 +104,7 @@
         }
         
         button {
-            grid-column: span 2;
+            grid-column: span 1;
             background-color: #4CAF50;
             color: white;
             cursor: pointer;
@@ -112,7 +112,7 @@
         }
         
         button:hover {
-            background-color: #45a049;
+            background-color:rgb(87, 160, 69);
         }
         
         /* Search box and result styles */
@@ -168,7 +168,7 @@
             <label for="cec">CEC:</label>
             <input type="number" id="cec" name="cec" step="any" placeholder="Cation Exchange Capacity" />
             <label for="bulk_density">Bulk Density:</label>
-            <input type="number" id="bulk_density" name="bulk_density" step="any" placeholder="Bulk density" />
+            <input type="number" id="bulk_density" name="bulk density" step="any" placeholder="Bulk density" />
             <label for="soc">Soil Organic Carbon:</label>
             <input type="number" id="soc" name="soc" step="any" placeholder="Soil Organic Carbon" />
             <button type="submit">Predict</button>
@@ -182,158 +182,117 @@ function handleLogout() {
     window.location.href = '/logout';
 }
 
-// Initialize Map
-var map = L.map('map').setView([0.7, 35.9], 8);
+// Initialize map centered on Kenya
+const map = L.map('map').setView([0.7, 35.9], 8);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; OpenStreetMap contributors'
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
 }).addTo(map);
 
-var marker;
-var regionLayer;
+let marker = null;
+let polygon = null;
 
-// Add geocoding control
-var geocoder = L.Control.Geocoder.nominatim();
-L.Control.geocoder({
-    geocoder: geocoder,
+// Initialize geocoder
+const geocoder = L.Control.geocoder({
     defaultMarkGeocode: false
-}).on('markgeocode', function(e) {
-    var bbox = e.geocode.bbox;
-    var poly = L.polygon([
-        bbox.getSouthEast(),
-        bbox.getNorthEast(),
-        bbox.getNorthWest(),
-        bbox.getSouthWest()
-    ]);
-
-    if (marker) map.removeLayer(marker);
-    if (regionLayer) map.removeLayer(regionLayer);
-
-    regionLayer = poly.addTo(map);
-    map.fitBounds(poly.getBounds());
-
-    var center = poly.getBounds().getCenter();
-    fetchSoilData(center.lat, center.lng);
 }).addTo(map);
 
-// Search Region Logic
-document.getElementById('searchButton').addEventListener('click', function() {
-    const regionName = document.getElementById('regionName').value.trim();
-    if (!regionName) {
-        alert('Please enter a region name.');
-        return;
-    }
-
-    geocoder.geocode(regionName, function(results) {
-        if (results.length === 0) {
-            alert('Region not found. Try a different name.');
-            return;
-        }
-
-        const result = results[0];
-        if (result.bbox) {
-            const poly = L.polygon([
-                [result.bbox.getSouth(), result.bbox.getEast()],
-                [result.bbox.getNorth(), result.bbox.getEast()],
-                [result.bbox.getNorth(), result.bbox.getWest()],
-                [result.bbox.getSouth(), result.bbox.getWest()]
-            ]);
-
-            if (marker) map.removeLayer(marker);
-            if (regionLayer) map.removeLayer(regionLayer);
-
-            regionLayer = poly.addTo(map);
-            map.fitBounds(poly.getBounds());
-
-            var center = poly.getBounds().getCenter();
-            fetchSoilData(center.lat, center.lng);
-        } else {
-            const lat = result.center.lat;
-            const lng = result.center.lng;
-            
-            if (marker) map.removeLayer(marker);
-            if (regionLayer) map.removeLayer(regionLayer);
-            
-            marker = L.marker([lat, lng]).addTo(map);
-            map.setView([lat, lng], 12);
-            
-            fetchSoilData(lat, lng);
-        }
-    });
-});
-
-// Handle Map Clicks
+// Handle map clicks
 map.on('click', function(e) {
-    const lat = e.latlng.lat;
-    const lng = e.latlng.lng;
-
+    const { lat, lng } = e.latlng;
+    
+    // Remove existing marker/polygon
     if (marker) map.removeLayer(marker);
-    if (regionLayer) map.removeLayer(regionLayer);
-
-    marker = L.marker(e.latlng).addTo(map);
-    fetchSoilData(lat, lng);
-});
-
-// Function to fetch soil data
-function fetchSoilData(lat, lng) {
+    if (polygon) map.removeLayer(polygon);
+    
+    // Add new marker
+    marker = L.marker([lat, lng]).addTo(map);
+    
+    // Auto-fill coordinates and fetch soil data
     document.getElementById('latitude').value = lat.toFixed(6);
     document.getElementById('longitude').value = lng.toFixed(6);
-
-    fetch(`/get_soil_data?latitude=${lat.toFixed(6)}&longitude=${lng.toFixed(6)}`)
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Received soil data:', data);
-            // Auto-fill form fields
-            document.getElementById('nitrogen').value = data.N || '';
-            document.getElementById('ph').value = data.ph || '';
-            document.getElementById('sand').value = data.sand || '';
-            document.getElementById('silt').value = data.silt || '';
-            document.getElementById('clay').value = data.clay || '';
-            document.getElementById('cec').value = data.cec || '';
-            document.getElementById('bulk_density').value = data['bulk density'] || '';
-            document.getElementById('soc').value = data.soc || '';
-        })
-        .catch(err => {
-            console.error('Error fetching soil data:', err);
-            alert('Error fetching soil data. Please try another location.');
-        });
-}
-
-// Form Submission Logic
-document.getElementById('prediction-form').addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
-    const data = Object.fromEntries(formData.entries());
-
-    fetch('/predict', {
-        method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        const resultDiv = document.getElementById('result');
-        resultDiv.style.display = 'block';
-        resultDiv.innerHTML = `
-            <strong>Prediction:</strong> ${result.fertility_status}<br>
-            <strong>Recommended Crops:</strong> ${result.recommended_crops.join(', ')}<br>
-            <strong>Insights:</strong> ${result.insights}
-        `;
-    })
-    .catch(err => {
-        console.error('Error:', err);
-        alert('Error making prediction. Please try again.');
-    });
-});
-    </script>
     
+    getSoilData(lat, lng);
+});
+
+// Handle region search
+document.getElementById('searchButton').addEventListener('click', async () => {
+    const searchQuery = document.getElementById('regionName').value;
+    
+    try {
+        const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`);
+        const data = await response.json();
+        
+        if (data.length === 0) {
+            alert('Region not found. Please try a different search term.');
+            return;
+        }
+        
+        // Get first result
+        const result = data[0];
+        const lat = parseFloat(result.lat);
+        const lng = parseFloat(result.lon);
+        
+        // Clear existing markers/polygons
+        if (marker) map.removeLayer(marker);
+        if (polygon) map.removeLayer(polygon);
+        
+        // If we have bounding box data, draw polygon
+        if (result.boundingbox) {
+            const bounds = [
+                [result.boundingbox[0], result.boundingbox[2]],
+                [result.boundingbox[1], result.boundingbox[3]]
+            ];
+            polygon = L.rectangle(bounds, {color: '#4CAF50', weight: 2}).addTo(map);
+            map.fitBounds(bounds);
+        } else {
+            // Otherwise just add marker
+            marker = L.marker([lat, lng]).addTo(map);
+            map.setView([lat, lng], 12);
+        }
+        
+        // Auto-fill coordinates and fetch soil data
+        document.getElementById('latitude').value = lat.toFixed(6);
+        document.getElementById('longitude').value = lng.toFixed(6);
+        
+        getSoilData(lat, lng);
+    } catch (error) {
+        console.error('Search error:', error);
+        alert('Error searching for region. Please try again.');
+    }
+});
+
+// Function to get soil data and populate form
+async function getSoilData(lat, lng) {
+    try {
+        const response = await fetch(`/get_soil_data?latitude=${lat}&longitude=${lng}`);
+        if (!response.ok) throw new Error('Failed to fetch soil data');
+        
+        const data = await response.json();
+        
+        // Populate form fields
+        const fields = {
+            'nitrogen': 'N',
+            'ph': 'ph',
+            'sand': 'sand',
+            'silt': 'silt',
+            'clay': 'clay',
+            'cec': 'cec',
+            'bulk_density': 'bulk density',
+            'soc': 'soc'
+        };
+        
+        for (const [formId, dataKey] of Object.entries(fields)) {
+            if (data[dataKey] !== undefined) {
+                document.getElementById(formId).value = data[dataKey];
+            }
+        }
+    } catch (error) {
+        console.error('Error fetching soil data:', error);
+        alert('Error fetching soil data for this location.');
+    }
+}
+    </script>
     <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 </body>
 </html>

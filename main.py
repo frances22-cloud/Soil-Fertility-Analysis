@@ -213,9 +213,9 @@ def predict():
         
         # Prepare response data
         response_data = {
-            'latitude': lat,
-            'longitude': lon,
-            'soil_data': soil_data,
+            #'latitude': lat,
+            #'longitude': lon,
+            #'soil_data': soil_data,
             'fertility_info': fertility_info,
             'prediction': int(prediction),
             'fertility_status': fertility_info['status'],
