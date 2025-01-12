@@ -3,116 +3,200 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Prediction Results</title>
+    <title>Soil Fertility Analysis Results</title>
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #f7f7f7;
+            padding: 0;
+            box-sizing: border-box;
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        h1 {
-            font-size: 24px;
-            margin-bottom: 20px;
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6fc;
             color: #333;
+            line-height: 1.6;
         }
-        h2 {
-            font-size: 20px;
-            margin-top: 20px;
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 30px;
+        }
+
+        .results-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .results-header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .results-header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .status-card, .crops-container, .insights-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .status-low {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-moderate {
+            background: #fff3e0;
+            color: #ef6c00;
+        }
+
+        .status-high {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.5em;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .crop-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .crop-tag {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 8px 15px;
+            border-radius: 50px;
+            font-size: 0.9em;
+        }
+
+        .insights-list {
+            margin-top: 15px;
+            padding-left: 20px;
+        }
+
+        .insights-list li {
+            margin-bottom: 10px;
             color: #555;
         }
-        .result {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #e7f3e7;
-            border: 1px solid #d4ecd4;
-            border-radius: 5px;
+
+        .back-button {
+            display: inline-block;
+            background: #4a90e2;
+            color: #fff;
+            padding: 12px 25px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.3s ease;
+            margin-top: 20px;
         }
-        .error {
-            margin-bottom: 20px;
-            padding: 15px;
-            background: #f8d7da;
-            border: 1px solid #f5c2c7;
-            border-radius: 5px;
-            color: #842029;
+
+        .back-button:hover {
+            background: #357abd;
         }
-        button {
-            padding: 10px 15px;
-            font-size: 14px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        button:hover {
-            background-color: #45a049;
+
+        .icon {
+            font-size: 1.5em;
+            vertical-align: middle;
         }
     </style>
 </head>
 <body>
-    <!-- Keep your existing head and style sections -->
-
-<div class="container">
-    <h1>Soil Fertility Prediction Results</h1>
-    {% if error %}
-    <div class="error">{{ error }}</div>
-    {% else %}
-    <div class="result">
-        <h2>Location</h2>
-        <p><strong>Latitude:</strong> {{ latitude }}</p>
-        <p><strong>Longitude:</strong> {{ longitude }}</p>
-       
-        <h2>Soil Properties</h2>
-        <ul>
-            {% for key, value in soil_data.items() %}
-            <li><strong>{{ key.replace('_', ' ').capitalize() }}:</strong> {{ "%.2f"|format(value) }}</li>
-            {% endfor %}
-        </ul>
-       
-        <h2>Prediction Results</h2>
-        <!-- Debug output to see what's being passed -->
-        <div style="display: none;">
-            Debug: {{ fertility_info }}
+    <div class="container">
+        <div class="results-header">
+            <h1>Soil Analysis Results</h1>
+            <p>Here's what we found about your Region's soil fertility</p>
         </div>
-        
-        <p><strong>Soil Fertility Status:</strong> 
-            {% if fertility_info and fertility_info.status %}
-                {{ fertility_info.status }}
-            {% else %}
-                No status available
-            {% endif %}
-        </p>
-        
-        <p><strong>Recommended Crops:</strong></p>
-        <ul>
-            {% if fertility_info and fertility_info.crops %}
-                {% for crop in fertility_info.crops %}
-                    <li>{{ crop }}</li>
+
+        <div class="status-card">
+            <div class="status-badge status-{{ data.fertility_status.lower().replace(' ', '-') }}">
+                {{ data.fertility_status }} Fertility
+            </div>
+            <p class="section-title">
+                <i class='bx bx-layer icon'></i>
+                Soil Fertility Status
+            </p>
+            <p>Your soil analysis indicates {{ data.fertility_status.lower() }} levels.</p>
+        </div>
+
+        <div class="crops-container">
+            <p class="section-title">
+                <i class='bx bx-leaf icon'></i>
+                Recommended Crops
+            </p>
+            <div class="crop-list">
+                {% for crop in data.recommended_crops %}
+                    <span class="crop-tag">{{ crop }}</span>
                 {% endfor %}
-            {% else %}
-                <li>No crop recommendations available</li>
-            {% endif %}
-        </ul>
-        
-        <p><strong>Insights:</strong> 
-            {% if fertility_info and fertility_info.insights %}
-                {{ fertility_info.insights }}
-            {% else %}
-                No insights available
-            {% endif %}
-        </p>
+            </div>
+        </div>
+
+        <div class="insights-card">
+            <p class="section-title">
+                <i class='bx bx-bulb icon'></i>
+                Key Insights & Recommendations
+            </p>
+            <ul class="insights-list">
+                {% for insight in data.insights.split('\n') if insight.strip() %}
+                    <li>{{ insight.strip().replace('-', '', 1).strip() }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="insights-card">
+            <p class="section-title">
+                <i class='bx bx-bar-chart-alt icon'></i>
+                Soil Indicators
+            </p>
+            <ul class="insights-list">
+                {% for indicator in data.soil_indicators %}
+                    <li>{{ indicator.strip().replace('-', '', 1).strip() }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="insights-card">
+            <p class="section-title">
+                <i class='bx bx-wrench icon'></i>
+                Management Practices
+            </p>
+            <ul class="insights-list">
+                {% for practice in data.management_practices %}
+                    <li>{{ practice.strip().replace('-', '', 1).strip() }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+        <a href="{{ url_for('index') }}" class="back-button">
+            <i class='bx bx-arrow-back'></i>
+            Back to Home
+        </a>
     </div>
-    {% endif %}
-    <button onclick="window.location.href='/index'">Back to Home</button>
-</div>
 </body>
 </html>

@@ -7,6 +7,8 @@ from flask_mysqldb import MySQL
 import MySQLdb.cursors
 import logging
 
+
+
 # Initialize Flask app and configure logging
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -43,24 +45,96 @@ def map_soil_fertility(prediction):
         0: {
             "status": "Low fertility",
             "crops": ["Millet", "Cassava", "Sorghum", "Sweet Potatoes", "Taro", "Groundnuts", "Sunflower", "Pigeon Pea"],
-            "insights": "Consider adding organic matter and fertilizers to improve fertility. Regular soil testing is recommended to track nutrient levels."
+            "insights": [
+                "Add compost or manure to the soil and use NPK fertilizers to provide balanced nutrients for crops",
+                "Cover the soil with mulch and reduce digging to save water and protect the soil.",
+                "Grow beans or peas (legumes) after other crops to add natural fertilizer to the soil.",
+                "Plant drought-resistant crops like millet or sorghum to ensure a good harvest with less water.",
+                "Apply fertilizers in small amounts at different times to help crops absorb nutrients better.",
+                "Build trenches, terraces, or small dams to collect and save rainwater for your farm.",
+                "Test your soil every 2-3 years to know what it needs and improve it over time.",
+                "Check soil pH regularly and add lime or sulfur to keep it balanced for better growth."
+            ],
+            "soil_indicators": [
+                "Low nutrient content ie the soil lacks key nutrients for plants",
+                "Poor water retention ie the soil dries out quickly.",
+                "Limited organic matter ie the soil has little decomposed material",
+                "The soil's pH is unbalanced"
+            ],
+            "management_practices": [
+                "Use fertilizers like urea or DAP in smaller portions during planting and growth stages to avoid waste and improve nutrient uptake.",
+                "Plant legumes such as clover, alfalfa, or cowpeas and mix them into the soil to increase nitrogen and organic matter",
+                "Grow maize, beans, or sorghum along the natural curves of sloped land to reduce soil erosion and water loss",
+                "Consider drip irrigation for water efficiency",
+                "Use mulching to conserve moisture and reduce soil erosion",
+                "Test the soil, and if it’s too acidic, add lime, or if it’s too alkaline, add sulfur to maintain a healthy range for crops."
+            ]
         },
         1: {
-            "status": "Moderate fertility",
+            "status": "Moderately fertile soils",
             "crops": ["Maize", "Beans", "Potatoes", "Cowpeas", "Chili Peppers", "Cabbage", "Tomatoes", "Soybeans"],
-            "insights": "Supplement with balanced nutrients for optimal yields. Use cover crops and compost to maintain soil health."
+            "insights": [
+                "Add the right mix of nutrients like NPK to boost moderate soil productivity.",
+                "Plant cover crops and add compost to improve soil structure and fertility.",
+                "Rotate crops to prevent nutrient depletion and sustain soil fertility.",
+                "Check crops for signs of nutrient deficiencies and adjust fertilization accordingly.",
+                "Implement precision farming techniques where possible",
+                "Apply irrigation carefully to ensure soil retains enough moisture.",
+                "Control pests using a mix of biological and chemical methods",
+                "Track fertilizer use to improve nutrient management over time."
+            ],
+            "soil_indicators": [
+                "Soil has enough nutrients for moderate plant growth.",
+                "Soil holds some water, but may need irrigation during dry periods.",
+                "Soil has enough organic material, but may benefit from more input.",
+                "Soil pH is usually suitable, but adjustments may be needed."
+            ],
+            "management_practices": [
+                "Test soil regularly to monitor nutrient levels and pH.",
+                "Apply fertilizers based on soil tests and crop needs.",
+                "Grow compatible crops together for better nutrient use",
+                "Use cover crops to improve fertility and soil health.",
+                "Combine chemical and organic fertilizers for soil health."
+            ]
         },
         2: {
-            "status": "High fertility",
+            "status": "Highly fertile soils",
             "crops": ["Wheat", "Sugarcane", "Tomatoes", "Rice", "Coffee", "Cocoa", "Avocados", "Bananas", "Peppers"],
-            "insights": "Maintain current practices to sustain fertility. Diversify crops to ensure long-term productivity and reduce soil erosion."
+            "insights": [
+                "Keep using balanced fertilizers and organic matter to preserve soil fertility.",
+                "Grow a variety of crops to prevent soil depletion and pests.",
+                "Test the soil regularly to avoid nutrient deficiencies or excesses.",
+                "Use minimal tillage and cover crops to protect soil and improve water use.",
+                "Use high-yielding crop varieties: Select improved seeds for better harvests and resilience.",
+                "Adopt drip or sprinkler systems to efficiently water crops.",
+                "Focus on soil biodiversity maintenance: Encourage beneficial organisms by adding organic matter.",
+                "Consider value-added crop production: Process crops into products to boost income."
+            ],
+            "soil_indicators": [
+                "Soil has a proper mix of essential nutrients for healthy plant growth.",
+                "Soil holds enough water to support crops during dry periods.",
+                "Soil contains decomposed plant and animal material, improving fertility and water retention.",
+                "Soil pH is balanced, allowing crops to easily absorb nutrients."
+            ],
+            "management_practices": [
+                "Monitor nutrient levels regularly",
+                "Rotate crops to prevent nutrient depletion and control pests.",
+                "Plant cover crops to improve soil fertility and reduce erosion.",
+                "Space crops properly for efficient growth.",
+                "Use practices like terracing and cover crops to protect soil."
+            ]
         }
     }
-    return mapping.get(prediction, {"status": "Unknown", "crops": [], "insights": "No insights available."})
-
-class SoilDataError(Exception):
-    """Custom exception for soil data related errors"""
-    pass
+    
+    default_value = {
+        "status": "Unknown",
+        "crops": [],
+        "insights": ["No insights available."],
+        "soil_indicators": ["No soil indicators available."],
+        "management_practices": ["No management practices available."]
+    }
+    
+    return mapping.get(prediction, default_value)
 
 def get_soil_data(lat, lon):
     """
@@ -70,27 +144,20 @@ def get_soil_data(lat, lon):
     try:
         response = requests.get(url)
         response.raise_for_status()
-
-        # Print raw response for debugging
-        print("Raw API response:", response.text)
-
         data = response.json()
 
-        # Extract 0-5 cm depth range data
+        if 'properties' not in data or 'layers' not in data['properties']:
+            raise ValueError("Invalid response from SoilGrids API")
+
         soil_properties = {}
-        if 'properties' in data and 'layers' in data['properties']:
-            layers = {layer['name']: layer for layer in data['properties']['layers']}
-            for key, layer in layers.items():
-                depth_data = next((d for d in layer['depths'] if d['label'] == '0-5cm'), None)
-                if depth_data and 'values' in depth_data:
-                    mean_value = depth_data['values'].get('mean')
-                    # Safely handle None values
-                    soil_properties[key] = (mean_value / 10.0) if mean_value is not None else 0
-                else:
-                    soil_properties[key] = 0
-        else:
-            # Handle case where soil data is missing
-            raise ValueError("Soil data not found for the given coordinates.")
+        layers = data['properties']['layers']
+        
+        for layer in layers:
+            property_name = layer['name']
+            depth_data = next((d for d in layer['depths'] if d['label'] == '0-5cm'), None)
+            if depth_data and 'values' in depth_data:
+                mean_value = depth_data['values'].get('mean')
+                soil_properties[property_name] = (mean_value / 10.0) if mean_value is not None else 0
 
         return {
             "N": soil_properties.get('nitrogen', 0),
@@ -103,33 +170,37 @@ def get_soil_data(lat, lon):
             "soc": soil_properties.get('soc', 0)
         }
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching soil data: {e}")
+        logger.error(f"SoilGrids API request failed: {e}")
         return None
-    except ValueError as e:
-        print(f"Error: {e}")
+    except (KeyError, ValueError) as e:
+        logger.error(f"Error processing soil data: {e}")
         return None
-
 
 def preprocess_and_predict(soil_data):
     """
     Preprocess soil data and predict soil fertility using the trained model.
     """
-    if not soil_data:
-        return "Error: No valid soil data available"
+    try:
+        if not soil_data:
+            raise ValueError("No soil data provided")
 
-    input_data = pd.DataFrame([[
-        soil_data["N"],
-        soil_data["ph"],
-        soil_data["sand"],
-        soil_data["silt"],
-        soil_data["cec"],
-        soil_data["bulk density"],
-        soil_data["clay"],
-        soil_data["soc"]
-    ]], columns=['N', 'ph', 'sand', 'silt', 'cec', 'bulk density', 'clay', 'soc'])
+        input_data = pd.DataFrame([[
+            soil_data["N"],
+            soil_data["ph"],
+            soil_data["sand"],
+            soil_data["silt"],
+            soil_data["cec"],
+            soil_data["bulk density"],
+            soil_data["clay"],
+            soil_data["soc"]
+        ]], columns=['N', 'ph', 'sand', 'silt', 'cec', 'bulk density', 'clay', 'soc'])
 
-    scaled_input = scaler.transform(input_data)
-    return model.predict(scaled_input)[0]
+        scaled_input = scaler.transform(input_data)
+        prediction = model.predict(scaled_input)[0]
+        return prediction
+    except Exception as e:
+        logger.error(f"Prediction error: {e}")
+        return None
 
 @app.route('/')
 def home():
@@ -181,71 +252,13 @@ def register():
 
 @app.route('/index')
 def index():
+    if 'loggedin' not in session:
+        return redirect(url_for('login'))
     return render_template('index.html')
 
-@app.route('/predict', methods=['POST'])
-def predict():
+@app.route('/get_soil_data')
+def get_soil_data_route():
     try:
-        # Check if request is AJAX/API call or form submission
-        is_api_request = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-        
-        # Get form/JSON data based on request type
-        if request.is_json:
-            data = request.get_json()
-            lat = float(data.get('latitude', 0))
-            lon = float(data.get('longitude', 0))
-        else:
-            lat = float(request.form.get('latitude', 0))
-            lon = float(request.form.get('longitude', 0))
-
-
-        # Get soil data from API
-        soil_data = get_soil_data(lat, lon)
-        if soil_data is None:
-            raise ValueError("Could not retrieve soil data from SoilGrids API")
-
-        # Make prediction
-        prediction = preprocess_and_predict(soil_data)
-        if prediction is None or isinstance(prediction, str):
-            raise ValueError("Model prediction failed")
-
-        fertility_info = map_soil_fertility(prediction)
-        
-        # Prepare response data
-        response_data = {
-            #'latitude': lat,
-            #'longitude': lon,
-            #'soil_data': soil_data,
-            'fertility_info': fertility_info,
-            'prediction': int(prediction),
-            'fertility_status': fertility_info['status'],
-            'recommended_crops': fertility_info['crops'],
-            'insights': fertility_info['insights']
-        }
-
-        # Return response based on request type
-        if is_api_request or request.is_json:
-            return jsonify(response_data)
-        else:
-            return render_template('results.html', **response_data, error=None)
-
-    except ValueError as ve:
-        error_msg = str(ve)
-        logger.error(f"Validation error: {error_msg}")
-        if is_api_request or request.is_json:
-            return jsonify({'error': error_msg}), 400
-        return render_template('results.html', error=error_msg)
-        
-    except Exception as e:
-        error_msg = f"An unexpected error occurred: {str(e)}"
-        logger.error(f"Unexpected error: {error_msg}")
-        if is_api_request or request.is_json:
-            return jsonify({'error': error_msg}), 500
-        return render_template('results.html', error=error_msg)
-    
-    @app.route('/get_soil_data')
-    def get_soil_data_route():
-     try:
         lat = float(request.args.get('latitude'))
         lon = float(request.args.get('longitude'))
         
@@ -254,10 +267,75 @@ def predict():
             return jsonify({'error': 'Could not retrieve soil data'}), 400
             
         return jsonify(soil_data)
-        
-     except Exception as e:
+    except (TypeError, ValueError) as e:
+        return jsonify({'error': f'Invalid coordinates: {str(e)}'}), 400
+    except Exception as e:
         logger.error(f"Error in get_soil_data_route: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
+
+@app.route('/predict', methods=['POST'])
+def predict():
+    try:
+        data = request.get_json() if request.is_json else request.form.to_dict()
+        
+        # Validate input data
+        required_fields = ['latitude', 'longitude']
+        if not all(field in data for field in required_fields):
+            raise ValueError("Missing required fields")
+
+        lat = float(data['latitude'])
+        lon = float(data['longitude'])
+
+        # Get soil data from API if not provided
+        soil_data = get_soil_data(lat, lon)
+        if soil_data is None:
+            raise ValueError("Could not retrieve soil data from SoilGrids API")
+
+        # Make prediction
+        prediction = preprocess_and_predict(soil_data)
+        if prediction is None:
+            raise ValueError("Error making prediction")
+
+        # Get fertility information
+        fertility_info = map_soil_fertility(prediction)
+        
+        response_data = {
+            'prediction': int(prediction),
+            'fertility_status': fertility_info['status'],
+            'recommended_crops': fertility_info['crops'],
+            'insights': fertility_info['insights'],
+            'soil_indicators': fertility_info['soil_indicators'],
+            'management_practices': fertility_info['management_practices']
+        }
+
+        return jsonify(response_data)
+
+    except ValueError as ve:
+        return jsonify({'error': str(ve)}), 400
+    except Exception as e:
+        logger.error(f"Prediction error: {str(e)}")
+        return jsonify({'error': 'An unexpected error occurred'}), 500
+    
+@app.route('/results', methods=['GET'])
+def results():
+    # Get the prediction from query parameters
+    prediction = int(request.args.get('prediction', 0))
+    
+    # Get the soil analysis data using the mapping function
+    soil_data = map_soil_fertility(prediction)
+    
+    # Format the data for the template
+    data = {
+        'fertility_status': soil_data['status'],
+        'recommended_crops': soil_data['crops'],
+        'insights': '\n'.join([f"- {insight}" for insight in soil_data['insights']]),
+        'soil_indicators': soil_data['soil_indicators'],
+        'management_practices': soil_data['management_practices']
+    }
+    
+    return render_template('results.html', data=data)
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
