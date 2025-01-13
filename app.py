@@ -26,8 +26,8 @@ mysql = MySQL(app)
 app.secret_key = os.urandom(24)
 
 # Paths to the model and scaler
-MODEL_PATH = r"C:/Users/frances2021/Desktop/Project/Models/soil_fertility_model.pkl"
-SCALER_PATH = r"C:/Users/frances2021/Desktop/Project/Models/soil_scaler.pkl"
+MODEL_PATH = "Models/soil_fertility_model.pkl"
+SCALER_PATH = "Models/soil_scaler.pkl"
 
 # Load the trained model and scaler
 try:
