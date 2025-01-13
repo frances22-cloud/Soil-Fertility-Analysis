@@ -8,7 +8,6 @@ import MySQLdb.cursors
 import logging
 
 
-
 # Initialize Flask app and configure logging
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
