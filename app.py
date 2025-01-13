@@ -14,12 +14,13 @@ app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Configure MySQL database connection
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'project'
-app.config['MYSQL_PORT'] = 3307
+# Configure MySQL database connection using environment variables
+app.config['MYSQL_HOST'] = os.getenv('DB_HOST', 'localhost') 
+app.config['MYSQL_USER'] = os.getenv('DB_USER', 'root')
+app.config['MYSQL_PASSWORD'] = os.getenv('DB_PASSWORD', '')
+app.config['MYSQL_DB'] = os.getenv('DB_NAME', 'project')
+app.config['MYSQL_PORT'] = int(os.getenv('DB_PORT', 3307))
+
 mysql = MySQL(app)
 
 # Secret key for session management
