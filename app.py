@@ -45,12 +45,12 @@ def map_soil_fertility(prediction):
             "status": "Low fertility",
             "crops": ["Millet", "Cassava", "Sorghum", "Sweet Potatoes", "Taro", "Groundnuts", "Sunflower", "Pigeon Pea"],
             "insights": [
-                "Add compost or manure to the soil and use NPK fertilizers to provide balanced nutrients for crops",
+                "Add compost manure to the soil and use NPK fertilizers to provide balanced nutrients for crops",
                 "Cover the soil with mulch and reduce digging to save water and protect the soil.",
                 "Grow beans or peas (legumes) after other crops to add natural fertilizer to the soil.",
                 "Plant drought-resistant crops like millet or sorghum to ensure a good harvest with less water.",
                 "Apply fertilizers in small amounts at different times to help crops absorb nutrients better.",
-                "Build trenches, terraces, or small dams to collect and save rainwater for your farm.",
+                "Build trenches, terraces, or small dams to collect and save rain water for your farm.",
                 "Test your soil every 2-3 years to know what it needs and improve it over time.",
                 "Check soil pH regularly and add lime or sulfur to keep it balanced for better growth."
             ],
@@ -64,7 +64,7 @@ def map_soil_fertility(prediction):
                 "Use fertilizers like urea or DAP in smaller portions during planting and growth stages to avoid waste and improve nutrient uptake.",
                 "Plant legumes such as clover, alfalfa, or cowpeas and mix them into the soil to increase nitrogen and organic matter",
                 "Grow maize, beans, or sorghum along the natural curves of sloped land to reduce soil erosion and water loss",
-                "Consider drip irrigation for water efficiency",
+                "Rotate crops to prevent nutrient depletion and break pest cycles.",
                 "Use mulching to conserve moisture and reduce soil erosion",
                 "Test the soil, and if it’s too acidic, add lime, or if it’s too alkaline, add sulfur to maintain a healthy range for crops."
             ]
